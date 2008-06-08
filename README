@@ -1,0 +1,8 @@
+To run the tests, edit the
+
+projects/bosh_openfire/bin/setGrinderEnv.cmd and
+projects/bosh_openfire/bin/setGrinderEnv.sh
+
+files appropriate to the underlying environment. These files require full path info for grinder and java.
+
+-huni
