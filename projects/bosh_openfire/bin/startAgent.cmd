@@ -1,3 +1,2 @@
 call setGrinderEnv.cmd
-echo %CLASSPATH%
-java -cp %CLASSPATH% net.grinder.Grinder %GRINDERPROPERTIES%
+java -cp %CLASSPATH% -Dgrinder.agentID=0 net.grinder.Grinder %GRINDERPROPERTIES%
