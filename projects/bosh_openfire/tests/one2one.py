@@ -33,7 +33,7 @@ agentID = int(grinder.properties["grinder.agentID"])
 processID = int(grinder.processName.split("-").pop())
 domain = 'openfire-loadtest.ath.cx'
 boshUrl = 'http://' + domain + ':7070/http-bind/'
-boshWait = 10
+boshWait = 1
 userPrefix = "user"
 numThreads = 25
 
@@ -47,8 +47,9 @@ request301 = Test(301, 'Bind resource').wrap(HTTPRequest(url=boshUrl))
 request401 = Test(401, 'Request a session from the server').wrap(HTTPRequest(url=boshUrl))
 request501 = Test(501, 'Get roster').wrap(HTTPRequest(url=boshUrl))
 request601 = Test(601, 'Change presence').wrap(HTTPRequest(url=boshUrl))
-request701 = Test(701, 'Make an empty request to the server').wrap(HTTPRequest(url=boshUrl))
-request801 = Test(801, 'Terminate the session').wrap(HTTPRequest(url=boshUrl))
+request701 = Test(701, 'Send message').wrap(HTTPRequest(url=boshUrl))
+request801 = Test(801, 'Make an empty request to the server').wrap(HTTPRequest(url=boshUrl))
+request901 = Test(901, 'Terminate the session').wrap(HTTPRequest(url=boshUrl))
 
 class TestRunner:
   """A TestRunner instance is created for each worker thread."""
@@ -56,10 +57,11 @@ class TestRunner:
   def __init__(self):
     log("agentID %s, processID %s, threadID %s" % (agentID, processID, grinder.threadID))
     self.userID = (agentID * 100000) + (processID * numThreads) + grinder.threadID
-    self.targetUser = (agentID * 100000) + (processID * numThreads) + (grinder.threadID + 1)  % numThreads
-    log("userID %s, targetUser %s" % (self.userID, self.targetUser))
+    self.targetUserID = (agentID * 100000) + (processID * numThreads) + (grinder.threadID + 1) % numThreads
+    log("userID %s, targetUserID %s" % (self.userID, self.targetUserID))
     self.username = userPrefix + str(self.userID)
     self.password = userPrefix + str(self.userID)
+    self.targetUser = userPrefix + str(self.targetUserID)
     self.sid = ""
     self.rid = Random().nextInt(1000000)
     self.inactivity = 0
@@ -137,7 +139,7 @@ class TestRunner:
     return result
 
   def changePresence(self, show):
-    """POST proxy (request 601)."""
+  
     result = request601.POST('',
       '<body xmlns=\"http://jabber.org/protocol/httpbind\" rid=\"' + str(self.rid) + '\" sid=\"' + self.sid + '\"><presence from=\"' + self.username + '@' + domain + '/Home\"><show>' + show + '</show></presence></body>',
       ( NVPair('Content-Type', 'text/plain; charset=utf-8'), ))
@@ -148,9 +150,22 @@ class TestRunner:
 
     return result
 
+  def sendMessage(self, message, target):
+  
+    log("mess: " + '<body xmlns=\"http://jabber.org/protocol/httpbind\" rid=\"' + str(self.rid) + '\" sid=\"' + self.sid + '\"><message type=\"chat\" from=\"' + self.username + '@' + domain + '/Home\" to=\"' + target + '@' + domain + '\"><body>' + message + '</body><thread>424606.37859118988</thread><active xmlns=\"http://jabber.org/protocol/chatstates\" /></message></body>')
+    result = request701.POST('',
+      '<body xmlns=\"http://jabber.org/protocol/httpbind\" rid=\"' + str(self.rid) + '\" sid=\"' + self.sid + '\"><message type=\"chat\" from=\"' + self.username + '@' + domain + '/Home\" to=\"' + target + '@' + domain + '\"><body>' + message + '</body><thread>424606.37859118988</thread><active xmlns=\"http://jabber.org/protocol/chatstates\" /></message></body>',
+    ( NVPair('Content-Type', 'text/plain; charset=utf-8'), ))
+    
+    self.rid += 1
+    
+    log("sendMessage response: %s" % result.getText())
+
+    return result
+
   def poll(self):
   
-    result = request701.POST('',
+    result = request801.POST('',
       '<body xmlns=\"http://jabber.org/protocol/httpbind\" rid=\"' + str(self.rid) + '\" sid=\"' + self.sid + '\" />',
       ( NVPair('Content-Type', 'text/plain; charset=utf-8'), ))
     
@@ -162,7 +177,7 @@ class TestRunner:
 
   def terminate(self):
   
-    result = request801.POST('',
+    result = request901.POST('',
       '<body xmlns=\"http://jabber.org/protocol/httpbind\" rid=\"' + str(self.rid) + '\" sid=\"' + self.sid + '\" type=\"terminate\"><presence type=\"unavailable\" from=\"' + self.username + '@' + domain + '/Home\" to=\"' + domain + '\" /></body>',
       ( NVPair('Content-Type', 'text/plain; charset=utf-8'), ))
     
@@ -181,16 +196,22 @@ class TestRunner:
     self.requestSession()
     self.getRoster()
     
-    for count in range(30):
-      if count % 2 == 0:
+    message = "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Duis rutrum porttitor ante. Nunc arcu leo."
+    show = "chat"
+    
+    #while(True):
+    for i in range(2):
+      if show == "dnd":
         show = "chat"
       else:
         show = "dnd"
       self.changePresence(show)
-      if grinder.statistics.forLastTest.time < boshWait * 1000:
-        grinder.sleep(boshWait * 1000 - grinder.statistics.forLastTest.time)
-    
-    self.poll()
+      if grinder.statistics.forLastTest.time < 5000:
+        grinder.sleep(5000 - grinder.statistics.forLastTest.time)
+      for j in range(5):
+        self.sendMessage(message, self.targetUser)
+        if grinder.statistics.forLastTest.time < 5000:
+          grinder.sleep(5000 - grinder.statistics.forLastTest.time)
     self.terminate()
     
 def getXMLcontent(result):
@@ -216,5 +237,6 @@ instrumentMethod(Test(300, 'Bind resource'), 'bind')
 instrumentMethod(Test(400, 'Request a session from the server'), 'requestSession')
 instrumentMethod(Test(500, 'Get roster'), 'getRoster')
 instrumentMethod(Test(600, 'Change presence'), 'changePresence')
-instrumentMethod(Test(700, 'Make an empty request to the server'), 'poll')
-instrumentMethod(Test(800, 'Terminate the session'), 'terminate')
+instrumentMethod(Test(700, 'Send message'), 'sendMessage')
+instrumentMethod(Test(800, 'Make an empty request to the server'), 'poll')
+instrumentMethod(Test(900, 'Terminate the session'), 'terminate')
