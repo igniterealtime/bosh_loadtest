@@ -1,3 +1,3 @@
-#!/usr/bin/bash
+#!/bin/bash
 ./setGrinderEnv.sh
 java -cp $CLASSPATH net.grinder.Console
