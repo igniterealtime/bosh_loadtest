@@ -31,11 +31,12 @@ connectionDefaults.defaultHeaders = \
 
 agentID = int(grinder.properties["grinder.agentID"])
 processID = int(grinder.processName.split("-").pop())
-domain = 'openfire-loadtest.ath.cx'
-boshUrl = 'http://' + domain + ':7070/http-bind/'
+host = '192.168.1.200'
+domain = 'openf.ath.cx'
+boshUrl = 'http://' + host + ':7070/http-bind/'
 boshWait = 1
-userPrefix = "user"
-numThreads = 10
+userPrefix = 'user'
+numThreads = 1
 
 # Create an HTTPRequest for each request, then replace the
 # reference to the HTTPRequest with an instrumented version.
@@ -88,7 +89,7 @@ class TestRunner:
     authtext = Codecs.base64Encode('%s\x00%s\x00%s' % (self.username + '@' + domain, self.username, self.password))
     log(authtext)
     if authtext[-1] == '\n':
-      authtext = authtext[:-1]
+	  authtext = authtext[:-1]
     
     result = request201.POST('',
       '<body xmlns=\"http://jabber.org/protocol/httpbind\" rid=\"' + str(self.rid) + '\" sid=\"' + self.sid + '\"><auth xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\" mechanism=\"PLAIN\">' + authtext + '</auth></body>',
@@ -153,7 +154,7 @@ class TestRunner:
   def sendMessage(self, message, target):
   
     result = request701.POST('',
-      '<body xmlns=\"http://jabber.org/protocol/httpbind\" rid=\"' + str(self.rid) + '\" sid=\"' + self.sid + '\"><message type=\"chat\" from=\"' + self.username + '@' + domain + '/Home\" to=\"' + target + '@' + domain + '\"><body>' + message + '</body><thread>424606.37859118988</thread><active xmlns=\"http://jabber.org/protocol/chatstates\" /></message></body>',
+      '<body xmlns=\"http://jabber.org/protocol/httpbind\" rid=\"' + str(self.rid) + '\" sid=\"' + self.sid + '\"><message type=\"chat\" from=\"' + self.username + '@' + domain + '/Home\" to=\"' + target + '@' + domain + '\"><body>' + message + '</body></message></body>',
     ( NVPair('Content-Type', 'text/plain; charset=utf-8'), ))
     
     self.rid += 1
