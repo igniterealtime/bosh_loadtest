@@ -86,10 +86,10 @@ class TestRunner:
 
   def auth(self):
     
-    authtext = Codecs.base64Encode('%s\x00%s\x00%s' % (self.username + '@' + domain, self.username, self.password))
-    log(authtext)
-    if authtext[-1] == '\n':
-	  authtext = authtext[:-1]
+    authtext = Codecs.base64Encode('%s\x00%s\x00%s' % (self.username + '@' + domain, self.username, self.password)).strip()
+    log("authtext: " + authtext)
+    #if authtext[-1] == '\n':
+	#  authtext = authtext[:-1]
     
     result = request201.POST('',
       '<body xmlns=\"http://jabber.org/protocol/httpbind\" rid=\"' + str(self.rid) + '\" sid=\"' + self.sid + '\"><auth xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\" mechanism=\"PLAIN\">' + authtext + '</auth></body>',
