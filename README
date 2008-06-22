@@ -1,8 +1,41 @@
-To run the tests, edit the
+This document describes required steps to load test BOSH (Bidirectional-streams Over Synchronous HTTP) on Openfire.
+Online version of this document can be found at: http://www.igniterealtime.org/community/docs/DOC-1539
 
-projects/bosh_openfire/bin/setGrinderEnv.cmd and
-projects/bosh_openfire/bin/setGrinderEnv.sh
+1. Prerequisites
+1.1. Hardware Environment
 
-files appropriate to the underlying environment. These files require full path info for grinder and java.
+    * Although you can use one machine as the server and client at the same time, it is recommended to use one machine as the server and two machines as clients.
+    * To prevent the network to be the bottleneck, it is recommended that clients and the server reside on the same LAN.
+
+1.2. Software Environment
+
+    * Install Openfire to the test server. Do not use embedded database, since it will consume too much JVM resources.
+    * Populate the server with users, rosters and vcards using the User Creation Plugin. The test script assumes that 100000 users are created for every client machine.
+    * You will use the load testing tool named The Grinder during the testing process. Check out the project from http://svn.igniterealtime.org/svn/repos/bosh_loadtest/trunk to client machines.
+    * If you are on a Windows environment, update path information in projects/loadtest/bin/setGrinderEnv.cmd.
+    * The Grinder's console can be used to start/stop and monitor the agents. You should run the console on a computer that is accessible from outside.
+    * In the projects/loadtest/etc/grinder.properties file, change grinder.consoleHost property to your console's hostname. If you are on a UNIX environment, also change python.cachedir to the full path to a temporary directory.
+    * If you are having trouble starting The Grinder, take a look at the getting started guide.
+    * In the test script (one2one.py), change host variable to server's hostname and domain variable to server's domain name.
+
+2. Running the Tests
+Currently the only test script, one2one.py logs in, gets roster, sends messages to another user every 5 seconds and changes presence every 30 seconds. You can make adjustments in the test script before running it.
+
+Every agent should be started with a unique agentID. startAgent.cmd defaults to agentID=0. You should manually edit startAgent.cmd on different client machines to ensure all clients have unique agentID's. On the other hand, startAgent.sh should be run with an agentID parameter, like:
+
+./startAgent.sh 1
+
+To run the tests:
+
+    * Run The Grinder's console.
+    * Run the agents on client machines. Agents should wait for console signal to start.
+    * From the console, signal agents to start.
+    * When you have collected enough data, signal agents to stop.
+
+2.1. Adjusting the Load on the Server
+By changing the values grinder.processes, grinder.threads, grinder.processIncrement and grinder.processIncrementInterval in grinder.properties file, you can adjust the load clients inject to the server. For details on how to adjust these variables, refer to The Grinder's documentation. Make sure that the numThreads variable in the script is equal to grinder.threads.
+
+3. Evaluating the Results
+Grinder Analyzer can parse The Grinder's log files and produce performance graphs. Log files can be found in projects/loadtest/logs directory after the tests have been completed.
 
 -huni
